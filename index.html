@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Penguin Waddle Simulator</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            overflow: hidden; 
+            background: #a3d5ff; 
+            text-align: center;
+            font-family: Arial, sans-serif;
+        }
+        canvas { display: block; background: linear-gradient(to bottom, #a3d5ff, #ffffff); }
+    </style>
+</head>
+<body>
+
+<canvas id="gameCanvas"></canvas>
+
+<script>
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext("2d");
+
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    let penguin = { x: 50, y: canvas.height / 2, width: 50, height: 50, speed: 3, invincible: false };
+    let obstacles = [];
+    let powerUps = [];
+    let gameSpeed = 3;
+    let score = 0;
+
+    function drawPenguin() {
+        ctx.fillStyle = penguin.invincible ? "gold" : "black";
+        ctx.beginPath();
+        ctx.arc(penguin.x + 25, penguin.y + 25, 25, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = "white";
+        ctx.beginPath();
+        ctx.arc(penguin.x + 15, penguin.y + 15, 8, 0, Math.PI * 2);
+        ctx.fill();
+    }
+
+    function createObstacle() {
+        let types = ["snowball", "seal", "fish"];
+        let type = types[Math.floor(Math.random() * types.length)];
+        obstacles.push({ x: canvas.width, y: Math.random() * canvas.height, width: 40, height: 40, type });
+    }
+
+    function createPowerUp() {
+        powerUps.push({ x: canvas.width, y: Math.random() * canvas.height, width: 30, height: 30, type: "boost" });
+    }
+
+    function drawObstacles() {
+        obstacles.forEach(obstacle => {
+            ctx.fillStyle = obstacle.type === "snowball" ? "white" : obstacle.type === "seal" ? "gray" : "orange";
+            ctx.fillRect(obstacle.x, obstacle.y, obstacle.width, obstacle.height);
+        });
+    }
+
+    function drawPowerUps() {
+        powerUps.forEach(power => {
+            ctx.fillStyle = "blue";
+            ctx.fillRect(power.x, power.y, power.width, power.height);
+        });
+    }
+
+    function updateGame() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        drawPenguin();
+        drawObstacles();
+        drawPowerUps();
+
+        obstacles.forEach((obstacle, index) => {
+            obstacle.x -= gameSpeed;
+            if (obstacle.x + obstacle.width < 0) obstacles.splice(index, 1);
+            if (!penguin.invincible && isColliding(penguin, obstacle)) gameOver();
+        });
+
+        powerUps.forEach((power, index) => {
+            power.x -= gameSpeed;
+            if (power.x + power.width < 0) powerUps.splice(index, 1);
+            if (isColliding(penguin, power)) {
+                penguin.invincible = true;
+                setTimeout(() => { penguin.invincible = false; }, 3000);
+                powerUps.splice(index, 1);
+            }
+        });
+
+        score++;
+        gameSpeed += 0.001;
+
+        requestAnimationFrame(updateGame);
+    }
+
+    function isColliding(a, b) {
+        return a.x < b.x + b.width && a.x + a.width > b.x && a.y < b.y + b.height && a.y + a.height > b.y;
+    }
+
+    function gameOver() {
+        alert(`You got smacked! Final Score: ${score}`);
+        location.reload();
+    }
+
+    document.addEventListener("mousemove", (event) => {
+        let rect = canvas.getBoundingClientRect();
+        penguin.y = event.clientY - rect.top - penguin.height / 2;
+    });
+
+    setInterval(createObstacle, 1500);
+    setInterval(createPowerUp, 5000);
+    updateGame();
+</script>
+
+</body>
+</html>
